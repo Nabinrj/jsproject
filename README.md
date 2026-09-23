@@ -1,46 +1,31 @@
-# Hall Booking Management System (Java Swing + TXT storage)
+# Smart Laundry Facility Simulation
 
-This repository now contains a coursework-ready **Object-Oriented Programming** starter implementation for the Hall Symphony booking scenario.
+This repository contains a Java Swing simulation for the CT074-3-2 Concurrent Programming Smart Laundry Facility case study.
 
-## Implemented modules
-- **Authentication**: login + customer registration.
-- **Role dashboards**:
-  - Scheduler: add/view/delete halls.
-  - Customer: view halls, book hall, view own bookings.
-  - Administrator: view users, block user, view all bookings.
-  - Manager: view total sales, view/update issues.
-- **Persistence**: all data stored in plain text files under `data/` (`users.txt`, `halls.txt`, `bookings.txt`, `issues.txt`).
+## Implemented simulation behaviour
+- 50 independently submitted customer tasks arrive at random 0–3 second intervals.
+- Six fair washer permits, four fair dryer permits, and two fair payment-kiosk permits control access.
+- Washing takes 4–6 seconds, drying 3–5 seconds, and payment 1–2 seconds.
+- A 5% washer failure retries the wash; a 5% kiosk failure retries payment after two seconds.
+- The dashboard shows individual busy machines plus served, average journey time, and maximum concurrent washer/dryer use.
+- The congested scenario makes kiosks unavailable for the day and alerts the owner exactly once once 30 customers are queued.
 
-## OOP concepts used
-- **Encapsulation** in all domain models (`User`, `Hall`, `Booking`, `Issue`).
-- **Inheritance** with user subclasses (`Customer`, `Scheduler`, `Administrator`, `Manager`).
-- **Polymorphism/abstraction** via `User` base type and role-specific behavior routing in UI.
-- **Composition** in services/repositories and `AppContext` dependency wiring.
+## Concurrency design
+- Fair `Semaphore`s model a finite number of equivalent physical resources and reduce starvation.
+- A `ReentrantLock` makes each scan-and-claim of a visual machine slot mutually exclusive.
+- `AtomicInteger`/`AtomicLong` collect counters and use compare-and-set to maintain maxima safely.
+- A `volatile` broken-kiosk flag gives worker threads visibility of the scenario state.
+- A cached `ExecutorService` executes customer tasks and supports orderly interruption with `shutdownNow()`.
 
 ## Project structure
-- `src/com/hallsymphony/model`: entities and enums.
-- `src/com/hallsymphony/repo`: text-file repositories.
-- `src/com/hallsymphony/service`: business rules.
-- `src/com/hallsymphony/ui`: Swing UI frames.
-- `src/com/hallsymphony/Main.java`: entry point.
+- `src/laundry/model`: shared facility, customer task, and statistics model.
+- `src/laundry/gui`: Swing visualisation.
+- `src/laundry/Main.java`: laundry simulation entry point.
 
 ## Compile and run
 ```bash
 javac -d out $(find src -name "*.java")
-java -cp out com.hallsymphony.Main
+java -cp out laundry.Main
 ```
 
-## Default staff accounts
-- Scheduler: `scheduler` / `pass123`
-- Administrator: `admin` / `pass123`
-- Manager: `manager` / `pass123`
-
-Customers can self-register from the login window.
-
-## Notes
-This version is a practical baseline to accelerate assignment completion. You can extend it with:
-- richer hall availability/maintenance schedules,
-- booking conflict validation,
-- weekly/monthly/yearly filtered sales reports,
-- full CRUD and search/filter UI for every role,
-- enhanced receipt and reporting screens.
+Stop a run with **Stop**; it interrupts any waiting customer tasks and releases all acquired resources via `finally` blocks.
